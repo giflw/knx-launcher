@@ -2,10 +2,9 @@ package utils
 
 import okio.FileSystem
 import okio.Path
-import okio.Source
 
 expect val DS : String
-expect fun binaryPath(): String
+expect fun binaryPath(): Path
 
 fun readAll(path: Path) : String {
     return FileSystem.SYSTEM.read(path) {

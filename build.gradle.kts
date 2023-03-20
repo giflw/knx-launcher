@@ -44,7 +44,7 @@ kotlin {
     }
     mingwX64("native") {
         binaries {
-            executable("knxLauncher", listOf(/*RELEASE, */DEBUG)){
+            executable("knxLauncher", listOf(RELEASE, DEBUG)){
                 baseName = "knx-launcher"
                 windowsResources("${baseName}.rc")
                 println("Executable path: ${outputFile.absolutePath}")
