@@ -2,7 +2,6 @@ plugins {
     kotlin("multiplatform") version "1.8.10"
 }
 
-
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
     val inFile = compilation.allKotlinSourceSets.stream().filter {
@@ -21,11 +20,8 @@ fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileNam
     linkerOpts(outFile.toString())
 }
 
-
 repositories {
     mavenCentral()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    google()
 }
 
 kotlin {
@@ -48,7 +44,7 @@ kotlin {
     }
     mingwX64("native") {
         binaries {
-            executable("knxLauncher", listOf(RELEASE, DEBUG)){
+            executable("knxLauncher", listOf(/*RELEASE, */DEBUG)){
                 baseName = "knx-launcher"
                 windowsResources("${baseName}.rc")
                 println("Executable path: ${outputFile.absolutePath}")
