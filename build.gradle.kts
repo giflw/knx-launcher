@@ -6,7 +6,6 @@ plugins {
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
     val inFile = compilation.allKotlinSourceSets.stream().filter {
-            println(">>>>> ${it}")
             it.name == "mingwX64Main"
     } .findFirst().get().resources.sourceDirectories.singleFile.resolve(rcFileName)
     val outFile = buildDir.resolve("processedResources/$taskName.res")
@@ -35,6 +34,7 @@ kotlin {
             val okioVersion = "3.3.0"
             dependencies {
                 implementation("com.squareup.okio:okio:$okioVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
             }
         }
         val nativeMain by creating {
