@@ -1,0 +1,46 @@
+// this is a UTF-8 file
+#pragma code_page(65001)
+
+// this is the Common Controls 6 manifest
+// 1 is the value of CREATEPROCESS_MANIFEST_RESOURCE_ID and 24 is the value of RT_MANIFEST
+#define CREATEPROCESS_MANIFEST_RESOURCE_ID 1
+#define RT_MANIFEST 24
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "knx-launcher.manifest"
+
+icon ICON "knx-launcher.ico"
+
+#include "winver.h"
+
+#define VERSION             0,1,0,0
+#define FULLVERSION_STRING  "0.1.0-SNAPSHOT"
+#define NAME                "KNX Launcher"
+#define EXE_NAME            "knx-launcher"
+#define DESCRIPTION         "KNX Launcher - Launch applications without using bat/ps1/sh"
+
+VS_VERSION_INFO     VERSIONINFO
+    FILEVERSION     VERSION
+    PRODUCTVERSION  VERSION
+    FILETYPE        VFT_APP
+    FILEFLAGS       VS_FF_DEBUG
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904E4"
+        {
+            VALUE "Comments",           DESCRIPTION
+            VALUE "CompanyName",        "giflw/knx-launcher"
+            VALUE "FileDescription",    DESCRIPTION
+            VALUE "FileVersion",        FULLVERSION_STRING
+            VALUE "InternalName",       EXE_NAME
+            VALUE "LegalCopyright",     "Copyright (C) 2023"
+            VALUE "LegalTrademarks",    "GPLv3"
+            VALUE "OriginalFilename",   EXE_NAME
+            VALUE "ProductName",        NAME
+            VALUE "ProductVersion",     FULLVERSION_STRING
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x0409, 0x4E4
+    }
+}
