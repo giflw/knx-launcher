@@ -1,4 +1,4 @@
-package utils
+package knxlauncher
 
 import kotlinx.cinterop.UShortVar
 import kotlinx.cinterop.allocArray
@@ -7,7 +7,6 @@ import kotlinx.cinterop.toKString
 import platform.windows.GetModuleFileNameW
 import platform.windows.GetModuleHandleW
 import platform.windows.MAX_PATH
-import putils.WSTR
 import okio.Path
 import okio.Path.Companion.toPath
 

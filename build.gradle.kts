@@ -44,9 +44,21 @@ kotlin {
     }
     mingwX64("native") {
         binaries {
-            executable("knxLauncher", listOf(RELEASE, DEBUG)){
-                baseName = "knx-launcher"
-                windowsResources("${baseName}.rc")
+            val resourcesBaseName = "knx-launcher"
+            val KNX_EXE_NAME = "KNX_EXE_NAME"
+            var knxExeName = System.getenv(KNX_EXE_NAME)
+            knxExeName = knxExeName ?: System.getProperty(KNX_EXE_NAME)
+            val exeName = if (knxExeName != null && knxExeName.isNotEmpty()) knxExeName else "knx-launcher"
+            executable("knxLauncher", listOf(DEBUG)){
+                baseName = "${exeName}_debug_"
+                entryPoint = "knxlauncher.main"
+                windowsResources("${resourcesBaseName}.rc")
+                println("Executable path: ${outputFile.absolutePath}")
+            }
+            executable("knxLauncher", listOf(RELEASE)){
+                baseName = exeName
+                entryPoint = "knxlauncher.main"
+                windowsResources("${resourcesBaseName}.rc")
                 println("Executable path: ${outputFile.absolutePath}")
             }
         }

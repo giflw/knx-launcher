@@ -1,4 +1,4 @@
-package putils
+package knxlauncher
 
 import kotlinx.cinterop.*
 import platform.windows.CP_UTF8
