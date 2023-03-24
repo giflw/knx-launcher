@@ -1,15 +1,16 @@
 package knxlauncher
 
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.toCStringArray
+import com.kgit2.process.Child
+import com.kgit2.process.Command
 import kotlinx.cli.*
 import okio.Path
 import okio.Path.Companion.toPath
-import platform.posix.spawnvpe
 import kotlin.system.exitProcess
 
 
 fun main(args: Array<String>) {
+    initPlatform()
+
     val path: Path = binaryPath()
 
     val programName = path.name.replace(".exe", "", ignoreCase = true).replace("_debug_", "")
@@ -26,14 +27,16 @@ fun main(args: Array<String>) {
 
     parser.parse(args)
 
-    val cfg = Config(readMap("Config", path.parent?.resolve(cfgDescriptor)))
+    var replacer = Replacer(path, env())
+
+    val cfg = Config(readMap("Config", path.parent?.resolve(cfgDescriptor), replacer))
     knxlauncher.debug = debug || cfg.debug
+    debug("[CFG] ${cfg}")
 
     info("${parser.programName} [debug=${debug}] ${cmdDescriptor} ${cfgDescriptor}")
 
-    var replacer = Replacer(path, env())
-    val env = readMap("Environment", path.parent?.resolve(envDescriptor), if (cfg.preserveEnv) env() else mapOf())
-        .onEach { it.key to replacer.replaceVars(it.value) }
+    val env =
+        readMap("Environment", path.parent?.resolve(envDescriptor), replacer, if (cfg.preserveEnv) env() else mapOf())
 
     replacer = Replacer(path, env)
     val commandLine: List<String> = CommandLine(cmdDescriptor.toPath(), path, replacer).get()
@@ -41,30 +44,39 @@ fun main(args: Array<String>) {
 
     var commandArgs: List<String> = commandLine.subList(1, commandLine.size)
     commandArgs = if (commandArgs.contains(cfg.knxExtraArgsName)) {
-        val first = commandLine.subList(0, commandLine.indexOf(cfg.knxExtraArgsName) - 1)
-        val last = if (commandLine.indexOf(cfg.knxExtraArgsName) < commandLine.size) {
-            commandLine.subList(commandLine.indexOf(cfg.knxExtraArgsName), commandLine.size - 1)
+        debug("[CMD] contains ${cfg.knxExtraArgsName}")
+        val first = commandArgs.subList(0, commandArgs.indexOf(cfg.knxExtraArgsName))
+        debug("[CMD:first] ${first}")
+        val last = if (commandArgs.indexOf(cfg.knxExtraArgsName) + 1 < commandArgs.size) {
+            commandArgs.subList(commandArgs.indexOf(cfg.knxExtraArgsName) + 1, commandArgs.size - 1)
         } else {
             listOf()
         }
-        first + arguments + last
+        debug("[CMD:last] ${last}")
+        val cargs = first + arguments + last
+        debug("[CMD:cargs] ${cargs}")
+        cargs
     } else {
+        debug("[CMD:oargs] ${commandArgs}")
         commandArgs
     }
 
+    debug("[CMD] ${command}")
     if (command.isNotEmpty()) {
-        debug(commandLine.joinToString(separator = " "))
-        var exitCode = 1
-        memScoped {
-            exitCode = spawnvpe(
-                cfg.mode,
-                command,
-                commandArgs.toCStringArray(this),
-                env.map { "${it.key}=${it.value}" }.toCStringArray(this)
-            ).toInt()
-            info("Exit code from child: ${exitCode}")
+        debug(command + " " + commandArgs.joinToString(separator = " "))
+        val process = Command(command).cwd(path.parent.toString())
+        commandArgs.forEach { process.arg(it) }
+        env.forEach { process.env(it.key, it.value) }
+
+        if (cfg.wait) {
+            val childExitStatus = process.status()
+            info("Child Exit Status: ${childExitStatus}")
+            exitProcess(childExitStatus.exitStatus())
+        } else {
+            val child: Child = process.spawn()
+            info("Child: ${child}")
+            exitProcess(if(child.id != null && child.id!! > 0) 0 else 1)
         }
-        exitProcess(exitCode)
     } else {
         error("Command not supplied!")
         exitProcess(1)

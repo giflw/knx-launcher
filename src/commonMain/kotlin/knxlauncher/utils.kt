@@ -28,15 +28,15 @@ fun env(): Map<String, String> {
     return env.map { it.split("=", limit = 2) }.associate { it[0] to it[1] }
 }
 
-fun readMap(name: String, path: Path?, init: Map<String, String> = mapOf()): Map<String, String> {
+fun readMap(name: String, path: Path?, replacer: Replacer, init: Map<String, String> = mapOf()): Map<String, String> {
     info("${name} file: ${path}")
     if (path != null && FileSystem.SYSTEM.exists(path)) {
         return init.plus(
             readAllLines(path)
                 .filter { it.isNotBlank() && !it.trim().startsWith("#") }
                 .map { it.split('=', limit = 2) }
-                .associate { it.first() to it.last() }
-        ).onEach { debug("[${name}] ${it.key} => ${it.valu  e}") }
+                .associate { it.first() to replacer.replaceVars(it.last()) }
+        ).onEach { debug("[${name}] ${it.key} => ${it.value}") }
     } else {
         debug("${name} file not found. Resuming anyway.")
     }

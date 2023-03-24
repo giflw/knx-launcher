@@ -1,13 +1,11 @@
 package knxlauncher
 
-import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
 
 class Replacer(path: Path, private val env: Map<String, String>) {
 
     private val vars: MutableMap<String, String?> = HashMap()
-    private val regex = Regex("[\\$#]\\{(?<varname>[a-zA-Z0-9:.]+)\\}")
+    private val regex = Regex("[\\$#]\\{(?<varname>[a-zA-Z0-9:._~-]+)\\}")
 
     init {
         vars["launcher.exe"] = path.name
@@ -17,6 +15,7 @@ class Replacer(path: Path, private val env: Map<String, String>) {
         )
         vars["launcher.dir"] = path.parent?.normalized().toString()
         vars["user.home"] = getFirstVarValue("USERPROFILE", "HOME")
+        vars["~"] = vars["user.home"]
     }
 
     private fun getFirstVarValue(vararg varnames: String?): String? {
@@ -37,22 +36,25 @@ class Replacer(path: Path, private val env: Map<String, String>) {
             val key = varname.substring(4)
             if (env.containsKey(key)) env[key] else null
         } else {
-            vars[varname]
+            return if (vars.containsKey(varname)) vars[varname] else env[varname]
         }
     }
 
     fun replaceVars(str: String): String {
         var newStr = str
-        val iter = regex.findAll(str).iterator()
-        debug(newStr)
+        debug("[replacer:original] ${newStr}")
+        val iterator = regex.findAll(str).iterator()
 
-        while (iter.hasNext()) {
-            val varname = iter.next().groups.get("varname")?.value
+        while (iterator.hasNext()) {
+            val varname = iterator.next().groups.get("varname")?.value
             var varvalue = getVarValue(varname)
             if (varname != null) {
-                varvalue = if (varvalue != null) varvalue else ""
-                debug("${varname} -> ${varvalue}")
-                newStr = str.replace("\${${varname}}", varvalue).replace("#{${varname}}", varvalue)
+                varvalue = varvalue ?: ""
+                debug("[replacer:match] ${varname} -> ${varvalue}")
+                newStr = newStr // on next line
+                    .replace("\${${varname}}", varvalue)
+                    .replace("#{${varname}}", varvalue)
+                debug("[replacer:replaced] ${newStr}")
             }
         }
         return newStr

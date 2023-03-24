@@ -31,6 +31,7 @@ kotlin {
             dependencies {
                 implementation("com.squareup.okio:okio:$okioVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
+                implementation("com.kgit2:kommand:1.0.1")
             }
         }
         val nativeMain by creating {
