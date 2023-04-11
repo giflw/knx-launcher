@@ -1,3 +1,5 @@
+rootProject.name = "knx-launcher"
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
