@@ -2,9 +2,9 @@ package knxlauncher
 
 import okio.Path
 
-class Replacer(path: Path, private val env: Map<String, String>) {
+class Replacer(otherVars: Map<String, String>, path: Path, private val env: Map<String, String>) {
 
-    private val vars: MutableMap<String, String?> = HashMap()
+    private val vars: MutableMap<String, String?> = HashMap(otherVars)
     private val regex = Regex("[\\$#]\\{(?<varname>[a-zA-Z0-9:._~-]+)\\}")
 
     init {
