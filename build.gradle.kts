@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.itquasar"
-version = "0.3.0-SNAPSHOT"
+version = "0.3.0"
 
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
