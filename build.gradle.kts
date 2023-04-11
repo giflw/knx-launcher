@@ -1,18 +1,9 @@
 plugins {
     kotlin("multiplatform") version "1.8.10"
-    `maven-publish`
 }
 
 group = "com.itquasar"
 version = "0.3.0-SNAPSHOT"
-
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-        }
-    }
-}
 
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
@@ -83,11 +74,3 @@ tasks.withType<Wrapper> {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-tasks.register<Copy>("pom") {
-    doNotTrackState("Copying generated pom.xml")
-    dependsOn("generatePomFileForNativePublication")
-    from(file("${buildDir}/publications/native"))
-    include("pom-default.xml")
-    into(file(projectDir))
-    rename("pom-default.xml", "pom.xml")
-}
