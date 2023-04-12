@@ -17,5 +17,6 @@ class Config(private val config: Map<String, String>) {
     val preserveEnv: Boolean = booleanConfig("preserveEnv", true)
     val knxExtraArgsName: String = stringConfig("knxExtraArgsName", "_KNX_EXTRA_ARGS")
     val wait: Boolean = booleanConfig("wait", true)
+    val argsIfNoArgs: List<String> = stringConfig("argsIfNoArgs", "").split(Regex("(?<=[^\\\\]) "))
     override fun toString(): String = config.toString()
 }
