@@ -1,6 +1,6 @@
 package knxlauncher
 
-var debug: Boolean = Platform.isDebugBinary
+var binaryDebug: Boolean = Platform.isDebugBinary
 
 private fun log(level: String, msg: String, ex: Throwable? = null) {
     println ("[${level}] ${msg}")
@@ -18,7 +18,7 @@ fun info(msg:String) {
 }
 
 fun debug(msg:String) {
-    if (debug) {
+    if (binaryDebug) {
         log("DEBUG", msg)
     }
 }
