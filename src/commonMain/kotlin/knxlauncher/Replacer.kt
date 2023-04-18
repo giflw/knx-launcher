@@ -8,14 +8,7 @@ class Replacer(path: Path) {
     private val regex = Regex("[\\$#]\\{(?<varname>[a-zA-Z0-9:._~-]+)\\}")
 
     init {
-        vars["launcher.exe"] = path.name
-        vars["launcher.name"] = path.name.substring(
-            0,
-            if (path.name.contains(".")) path.name.lastIndexOf(".") else path.name.length - 1
-        )
-        vars["launcher.dir"] = path.parent?.normalized().toString()
-        vars["user.home"] = getFirstVarValue("USERPROFILE", "HOME")
-        vars["~"] = vars["user.home"]
+        vars.putAll(Properties.get())
     }
 
     fun vars(otherVars: Map<String, String>): Replacer {
@@ -35,16 +28,6 @@ class Replacer(path: Path) {
             vars["env:${it.key}"] = it.value
         }
         return this
-    }
-
-    private fun getFirstVarValue(vararg varnames: String?): String? {
-        for (varname in varnames) {
-            val value = getVarValue(varname)
-            if (value != null) {
-                return value
-            }
-        }
-        return null
     }
 
     private fun getVarValue(varname: String?): String? {

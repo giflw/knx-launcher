@@ -1,7 +1,5 @@
 package knxlauncher
 
-import platform.posix.*
-
 class Config(forceDebug: Boolean, private val config: Map<String, String>) {
 
     data class ConfigEntry<T>(val name: String, val getter: (String) -> T) {
@@ -17,13 +15,15 @@ class Config(forceDebug: Boolean, private val config: Map<String, String>) {
         return config.getOrElse(name) { default }
     }
 
+    val argsIfNoArgs = ConfigEntry("argsIfNoArgs") { stringConfig(it, "").split(Regex("(?<=[^\\\\]) ")) }
+    val cwd = ConfigEntry("cwd") { stringConfig(it, Properties.get(Properties.LAUNCHER_DIR)) }
     val debug = ConfigEntry("debug") { forceDebug || booleanConfig(it, false) }
+    val knxExtraArgsName = ConfigEntry("knxExtraArgsName") { stringConfig(it, "_KNX_EXTRA_ARGS") }
     val preserveEnv = ConfigEntry("preserveEnv") { booleanConfig(it, true) }
-    val knxExtraArgsName = ConfigEntry("knxExtraArgsName") {stringConfig(it, "_KNX_EXTRA_ARGS")}
-    val wait = ConfigEntry("wait"){ booleanConfig(it, true)}
-    val argsIfNoArgs = ConfigEntry("argsIfNoArgs"){ stringConfig(it, "").split(Regex("(?<=[^\\\\]) "))}
+    val wait = ConfigEntry("wait") { booleanConfig(it, true) }
+
     val ALL = listOf(
-        debug, preserveEnv, knxExtraArgsName, wait, argsIfNoArgs
+        argsIfNoArgs, cwd, debug, knxExtraArgsName, preserveEnv, wait
     )
 
     override fun toString(): String = config.toString()

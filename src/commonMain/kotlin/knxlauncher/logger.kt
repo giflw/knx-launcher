@@ -17,6 +17,10 @@ fun info(msg:String) {
     log("INFO", msg)
 }
 
+fun warn(msg:String) {
+   log("WARN", msg)
+}
+
 fun debug(msg:String) {
     if (binaryDebug) {
         log("DEBUG", msg)
