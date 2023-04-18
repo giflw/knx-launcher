@@ -33,14 +33,14 @@ fun main(args: Array<String>) {
 
     val originalEnv = Env.get()
 
-    val cfg = Config(debug, readMap("Config", path.parent?.resolve(cfgDescriptor), Replacer(path).env(originalEnv)))
+    val cfg = Config(debug, readMap("Config", path.parent?.resolve(cfgDescriptor), Replacer().env(originalEnv)))
     binaryDebug = cfg.debug.value
     debug("[CFG] ${cfg}")
 
     val otherVars: Map<String, String> = if (!FileSystem.SYSTEM.exists(path.parent!!.resolve(incDescriptor))) {
         mapOf()
     } else {
-        val replacer = Replacer(path).env(originalEnv)
+        val replacer = Replacer().env(originalEnv)
         readAllLines(incDescriptor.toPath())
             .filter { it.isNotEmpty() }
             .onEach { debug("Including ${it}") }
@@ -52,14 +52,14 @@ fun main(args: Array<String>) {
     }
     info("Included ${otherVars.size} other vars from .inc.knx files list.")
 
-    var replacer = Replacer(path).vars(otherVars).env(originalEnv)
+    var replacer = Replacer().vars(otherVars).env(originalEnv)
 
     info("${parser.programName} [debug=${debug}] ${cmdDescriptor} ${cfgDescriptor}")
 
     val env =
         readMap("Environment", path.parent?.resolve(envDescriptor), replacer, if (cfg.preserveEnv.value) originalEnv else mapOf())
 
-    replacer = Replacer(path).vars(otherVars).env(env).config(cfg)
+    replacer = Replacer().vars(otherVars).env(env).config(cfg)
     val commandLine: List<String> = CommandLine(cmdDescriptor.toPath(), path, replacer).get()
     val command: String = commandLine.first()
 
