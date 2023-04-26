@@ -40,7 +40,7 @@ fun main(args: Array<String>) {
     val otherVars: Map<String, String> = if (!FileSystem.SYSTEM.exists(path.parent!!.resolve(incDescriptor))) {
         mapOf()
     } else {
-        val replacer = Replacer().env(originalEnv)
+        val replacer = Replacer().env(originalEnv).config(cfg)
         readAllLines(incDescriptor.toPath())
             .filter { it.isNotEmpty() }
             .onEach { debug("Including ${it}") }
@@ -52,7 +52,7 @@ fun main(args: Array<String>) {
     }
     info("Included ${otherVars.size} other vars from .inc.knx files list.")
 
-    var replacer = Replacer().vars(otherVars).env(originalEnv)
+    var replacer = Replacer().vars(otherVars).env(originalEnv).config(cfg)
 
     info("${parser.programName} [debug=${debug}] ${cmdDescriptor} ${cfgDescriptor}")
 
