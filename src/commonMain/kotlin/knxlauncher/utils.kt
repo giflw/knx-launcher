@@ -21,6 +21,7 @@ fun readAllLines(path: Path): List<String> {
     return readAll(path).lines()
 }
 
+
 fun readMap(name: String, path: Path?, replacer: Replacer, init: Map<String, String> = mapOf()): Map<String, String> {
     info("${name} file: ${path}")
     if (path != null && FileSystem.SYSTEM.exists(path)) {

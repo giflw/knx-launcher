@@ -1,7 +1,5 @@
 package knxlauncher
 
-import okio.Path
-
 class Replacer {
 
     private val vars: MutableMap<String, String?> = mutableMapOf()

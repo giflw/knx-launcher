@@ -16,7 +16,7 @@ actual val binaryPath: Path = run {
     // Get the path to the EXE.
     val hmodule = GetModuleHandleW(null)
     val wstr: WSTR = nativeHeap.allocArray<UShortVar>(MAX_PATH)
-    GetModuleFileNameW(hmodule, wstr, MAX_PATH)
+    GetModuleFileNameW(hmodule, wstr, MAX_PATH.toUInt())
     // Strip the filename leaving just the directory.
     //PathRemoveFileSpecW(wstr)
     return@run wstr.toKString().toPath()

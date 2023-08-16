@@ -13,6 +13,9 @@ on:
     branches: [ "*" ]
 
 jobs:
+  ##########################################
+  # Windows build
+  ##########################################
   windows:
     name: Windows Build
     runs-on: "windows-latest"
@@ -21,13 +24,17 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: true
-    - name: Set up JDK
+    - run: |
+        $download_url="https://github.com/adoptium/temurin20-binaries/releases/download/jdk-20.0.2%2B9/OpenJDK20U-jdk_x64_windows_hotspot_20.0.2_9.zip"
+        C:\msys64\usr\bin\wget.exe -O $RUNNER_TEMP/jdk.zip $download_url
+    - name: Set up JDK 20
       uses: actions/setup-java@v3
       with:
         distribution: temurin
+        jdkFile: ${{ runner.temp }}/jdk.zip
         architecture: x64
-        java-version: 17
-        cache: gradle
+        java-version: 20.
+        cache: maven
     - name: Build with Gradle
       run: ./gradlew clean build
     - name: Upload launcher
@@ -35,5 +42,36 @@ jobs:
       with:
         name: knx-launcher
         path: |
+            build/bin/native/knxLauncherDebugExecutable/knx-launcher_debug_.exe
+            build/bin/native/knxLauncherReleaseExecutable/knx-launcher.exe
+  ##########################################
+  # Linux build
+  ##########################################
+  ubuntu:
+    name: Linux Build
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - run: |
+          download_url="https://github.com/adoptium/temurin20-binaries/releases/download/jdk-20.0.2%2B9/OpenJDK20U-jdk_x64_linux_hotspot_20.0.2_9.tar.gz"
+          wget -O $RUNNER_TEMP/jdk.tar.gz $download_url
+      - name: Set up JDK 20
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          jdkFile: ${{ runner.temp }}/jdk.tar.gz
+          architecture: x64
+          java-version: 20
+          cache: maven
+      - name: Build with Gradle
+        run: sh ./gradlew clean build
+      - name: Upload launcher
+        uses: actions/upload-artifact@v3
+        with:
+          name: knx-launcher
+          path: |
             build/bin/native/knxLauncherDebugExecutable/knx-launcher_debug_.exe
             build/bin/native/knxLauncherReleaseExecutable/knx-launcher.exe

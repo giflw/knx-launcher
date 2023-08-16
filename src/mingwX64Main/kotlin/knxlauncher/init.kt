@@ -3,5 +3,5 @@ package knxlauncher
 import platform.windows.SetConsoleOutputCP
 
 actual fun initPlatform(): Unit {
-    SetConsoleOutputCP(65001)
+    SetConsoleOutputCP(65001U)
 }
