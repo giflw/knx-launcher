@@ -1,0 +1,39 @@
+ # This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Build
+
+on:
+  push:
+    branches: [ "*" ]
+
+jobs:
+  windows:
+    name: Windows Build
+    runs-on: "windows-latest"
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        architecture: x64
+        java-version: 17
+        cache: gradle
+    - name: Build with Gradle
+      run: ./gradlew clean build
+    - name: Upload launcher
+      uses: actions/upload-artifact@v3
+      with:
+        name: knx-launcher
+        path: |
+            build/bin/native/knxLauncherDebugExecutable/knx-launcher_debug_.exe
+            build/bin/native/knxLauncherReleaseExecutable/knx-launcher.exe
