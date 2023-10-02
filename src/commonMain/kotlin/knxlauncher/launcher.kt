@@ -96,7 +96,7 @@ fun main(args: Array<String>) {
         env.forEach { process.env(it.key, it.value) }
 
         if (cfg.wait.value) {
-            run(process)
+            run(process, cfg)
         } else {
             val child: Child = process.spawn()
             info("Child: ${child}")
@@ -108,7 +108,7 @@ fun main(args: Array<String>) {
     }
 }
 
-private fun run(process: Command) {
+private fun run(process: Command, cfg: Config) {
 //    fun handleSignal(signalNumber: Int) {
 //        warn("Got signal ${signalNumber}")
 //    }
@@ -121,7 +121,7 @@ private fun run(process: Command) {
         val child = process.spawn()
         childExitStatus = child.wait()
         warn("Child Exit Status: ${childExitStatus}")
-    } while (childExitStatus.exitStatus() == EXIT_RESTART)
+    } while (cfg.shouldRestart(childExitStatus.exitStatus()))
 
     exitProcess(childExitStatus.exitStatus())
 }

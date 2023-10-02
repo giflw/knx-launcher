@@ -17,7 +17,7 @@ class Replacer {
     }
 
     fun config(config: Config): Replacer {
-        config.ALL.forEach {
+        config.all().forEach {
             vars["cfg:${it.name}"] = it.value.toString()
         }
         return this
