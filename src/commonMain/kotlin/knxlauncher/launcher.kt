@@ -18,13 +18,13 @@ fun main(args: Array<String>) {
 
     val parser = ArgParser(programName)
     val debug by parser.option(ArgType.Boolean, description = "Turn on debug mode").default(debug)
-    val cmdDescriptor by parser.option(ArgType.String, shortName = "d", description = "Application description file")
+    val cmdDescriptor by parser.option(ArgType.String, shortName = "d", fullName = "command", description = "Application command description file")
         .default("${programName}.cmd.knx")
-    val cfgDescriptor by parser.option(ArgType.String, shortName = "c", description = "Configuration description file")
+    val cfgDescriptor by parser.option(ArgType.String, shortName = "c", fullName = "configuration", description = "Configuration description file")
         .default("${programName}.cfg.knx")
-    val envDescriptor by parser.option(ArgType.String, shortName = "e", description = "Environment description file")
+    val envDescriptor by parser.option(ArgType.String, shortName = "e", fullName = "environment", description = "Environment description file")
         .default("${programName}.env.knx")
-    val incDescriptor by parser.option(ArgType.String, shortName = "e", description = "Includes description file (list of other files to include as key=value replacements)")
+    val incDescriptor by parser.option(ArgType.String, shortName = "i", fullName = "includes", description = "Includes description file (list of other files to include as key=value replacements)")
         .default("${programName}.inc.knx")
     val arguments: List<String> by parser.argument(ArgType.String).optional().multiple(Int.MAX_VALUE)
 
@@ -37,7 +37,7 @@ fun main(args: Array<String>) {
     } else {
         val replacer = Replacer(mapOf(), path, originalEnv)
         readAllLines(incDescriptor.toPath())
-            .filter { it != null && !it.isEmpty() }
+            .filter { it.isNotEmpty() }
             .map { readAllLines(replacer.replaceVars(it).toPath()) }
             .flatten()
             .map { it.trimStart() }
@@ -75,7 +75,7 @@ fun main(args: Array<String>) {
             listOf()
         }
         debug("[CMD:last] ${last}")
-        val cargs = first + arguments + last
+        val cargs = first + (arguments.ifEmpty { cfg.argsIfNoArgs }) + last
         debug("[CMD:cargs] ${cargs}")
         cargs
     } else {
