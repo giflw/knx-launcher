@@ -2,9 +2,9 @@ package knxlauncher
 
 import okio.Path
 
-class Replacer(otherVars: Map<String, String>, path: Path, private val env: Map<String, String>) {
+class Replacer(path: Path) {
 
-    private val vars: MutableMap<String, String?> = HashMap(otherVars)
+    private val vars: MutableMap<String, String?> = mutableMapOf()
     private val regex = Regex("[\\$#]\\{(?<varname>[a-zA-Z0-9:._~-]+)\\}")
 
     init {
@@ -18,8 +18,27 @@ class Replacer(otherVars: Map<String, String>, path: Path, private val env: Map<
         vars["~"] = vars["user.home"]
     }
 
+    fun vars(otherVars: Map<String, String>): Replacer {
+        vars.putAll(otherVars)
+        return this
+    }
+
+    fun config(config: Config): Replacer {
+        config.ALL.forEach {
+            vars["cfg:${it.name}"] = it.value.toString()
+        }
+        return this
+    }
+
+    fun env(env: Map<String, String>): Replacer {
+        env.forEach {
+            vars["env:${it.key}"] = it.value
+        }
+        return this
+    }
+
     private fun getFirstVarValue(vararg varnames: String?): String? {
-        for(varname in varnames) {
+        for (varname in varnames) {
             val value = getVarValue(varname)
             if (value != null) {
                 return value
@@ -32,12 +51,7 @@ class Replacer(otherVars: Map<String, String>, path: Path, private val env: Map<
         if (varname == null) {
             return null
         }
-        return if (varname.startsWith("env:")) {
-            val key = varname.substring(4)
-            if (env.containsKey(key)) env[key] else null
-        } else {
-            return if (vars.containsKey(varname)) vars[varname] else env[varname]
-        }
+        return if (vars.containsKey(varname)) vars[varname] else ""
     }
 
     fun replaceVars(str: String): String {
