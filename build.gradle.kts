@@ -1,16 +1,16 @@
 plugins {
-    kotlin("multiplatform") version "1.8.10"
+    kotlin("multiplatform") version "1.9.10"
 }
 
 group = "com.itquasar"
-version = "0.3.0"
+version = "0.4.0-SNAPSHOT"
 
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
     val inFile = compilation.allKotlinSourceSets.stream().filter {
         it.name == "mingwX64Main"
     }.findFirst().get().resources.sourceDirectories.singleFile.resolve(rcFileName)
-    val outFile = buildDir.resolve("processedResources/$taskName.res")
+    val outFile = layout.buildDirectory.asFile.get().resolve("processedResources/$taskName.res")
 
     val windresTask = tasks.create<Exec>(taskName) {
         inputs.file(inFile)
@@ -34,11 +34,11 @@ fun isMinGWx64(): Boolean {
 kotlin {
     sourceSets {
         commonMain {
-            val okioVersion = "3.3.0"
+            val okioVersion = "3.5.0"
             dependencies {
                 implementation("com.squareup.okio:okio:$okioVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
-                implementation("com.kgit2:kommand:1.0.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
+                implementation("com.kgit2:kommand:1.0.2")
             }
         }
 
@@ -79,8 +79,8 @@ kotlin {
     }
 }
 
-tasks.withType<Wrapper> {
-    gradleVersion = "7.3"
-    distributionType = Wrapper.DistributionType.BIN
-}
+//tasks.withType<Wrapper> {
+//    gradleVersion = "8.3"
+//    distributionType = Wrapper.DistributionType.BIN
+//}
 
