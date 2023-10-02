@@ -11,8 +11,8 @@ icon ICON "icon.ico"
 
 #include "winver.h"
 
-#define VERSION             0,2,0,0
-#define FULLVERSION_STRING  "0.2.0"
+#define VERSION             0,3,0,0
+#define FULLVERSION_STRING  "0.3.0"
 #define NAME                "KNX Launcher"
 #define EXE_NAME            "knx-launcher"
 #define DESCRIPTION         "KNX Launcher - Launch applications without using bat/ps1/sh"
