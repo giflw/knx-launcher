@@ -1,6 +1,7 @@
 package knxlauncher
 
 import com.kgit2.process.Child
+import com.kgit2.process.ChildExitStatus
 import com.kgit2.process.Command
 import kotlinx.cinterop.staticCFunction
 import kotlinx.cli.*
@@ -11,10 +12,23 @@ import platform.posix.SIGINT
 import platform.posix.signal
 import kotlin.system.exitProcess
 
+// source: https://kickjava.com/src/org/eclipse/equinox/app/IApplication.java.htm
+/**
+* Exit object indicating normal termination
+*/
+val EXIT_OK = 0
+/**
+* Exit object requesting platform restart
+*/
+val EXIT_RESTART = 23
+/**
+* Exit object requesting that the command passed back be executed. Typically
+* this is used to relaunch Eclipse with different command line arguments. When the executable is
+* relaunched the command line will be retrieved from the <code>eclipse.exitdata</code> system property.
+*/
+val EXIT_RELAUNCH = 24
 
-fun main(args: Array<String>) {
-    initPlatform()
-
+class Options constructor(args: Array<String>) {
     val path: Path = binaryPath
 
     val programName = path.name.replace(".exe", "", ignoreCase = true).replace("_debug_", "")
@@ -51,43 +65,75 @@ fun main(args: Array<String>) {
         .default("${programName}.inc.knx")
     val arguments: List<String> by parser.argument(ArgType.String).optional().multiple(Int.MAX_VALUE)
 
-    parser.parse(args)
+    init {
+        parser.parse(args)
+    }
+}
+
+fun main(args: Array<String>) {
+    initPlatform()
+
+    val opts = Options(args)
+    info("${opts.parser.programName} [debug=${opts.debug}] ${opts.cfgDescriptor} ${opts.incDescriptor} ${opts.envDescriptor} ${opts.cmdDescriptor}")
 
     val originalEnv = Env.get()
 
-    val cfg = Config(debug, readMap("Config", path.parent?.resolve(cfgDescriptor), Replacer().env(originalEnv)))
-    binaryDebug = cfg.debug.value
-    debug("[CFG] ${cfg}")
+    val cfg = config(opts, originalEnv)
 
-    val otherVars: Map<String, String> = if (!FileSystem.SYSTEM.exists(path.parent!!.resolve(incDescriptor))) {
-        mapOf()
+    val otherVars: Map<String, String> = otherVars(opts, originalEnv, cfg)
+
+    val env = env(otherVars, originalEnv, cfg, opts)
+
+    val (command: String, commandArgs: List<String>) = command(otherVars, env, cfg, opts)
+
+    if (command.isNotEmpty()) {
+        debug(command + " " + commandArgs.joinToString(separator = " "))
+
+        val process = Command(command)
+        commandArgs.forEach { process.arg(it) }
+        process.cwd(cfg.cwd.value)
+
+        env.forEach { process.env(it.key, it.value) }
+
+        if (cfg.wait.value) {
+            run(process)
+        } else {
+            val child: Child = process.spawn()
+            info("Child: ${child}")
+            exitProcess(if (child.id != null && child.id!! > 0) 0 else 1)
+        }
     } else {
-        val replacer = Replacer().env(originalEnv).config(cfg)
-        readAllLines(incDescriptor.toPath())
-            .filter { it.isNotEmpty() }
-            .onEach { debug("Including ${it}") }
-            .flatMap { readMap("Includes", replacer.replaceVars(it).toPath(), replacer).entries }
-            .onEach { debug("Included ${it.key}: ${it.value}") }
-            .associate {
-                Pair(replacer.replaceVars(it.key), replacer.replaceVars(it.value))
-            }
+        error("Command not supplied!")
+        exitProcess(1)
     }
-    info("Included ${otherVars.size} other vars from .inc.knx files list.")
+}
 
-    var replacer = Replacer().vars(otherVars).env(originalEnv).config(cfg)
+private fun run(process: Command) {
+//    fun handleSignal(signalNumber: Int) {
+//        warn("Got signal ${signalNumber}")
+//    }
+//    signal(SIGINT, staticCFunction(::handleSignal))
 
-    info("${parser.programName} [debug=${debug}] ${cmdDescriptor} ${cfgDescriptor}")
+    var childExitStatus: ChildExitStatus
 
-    val env =
-        readMap(
-            "Environment",
-            path.parent?.resolve(envDescriptor),
-            replacer,
-            if (cfg.preserveEnv.value) originalEnv else mapOf()
-        )
+    do {
+        warn("Starting ${process.command}")
+        val child = process.spawn()
+        childExitStatus = child.wait()
+        warn("Child Exit Status: ${childExitStatus}")
+    } while (childExitStatus.exitStatus() == EXIT_RESTART)
 
-    replacer = Replacer().vars(otherVars).env(env).config(cfg)
-    val commandLine: List<String> = CommandLine(cmdDescriptor.toPath(), path, replacer).get()
+    exitProcess(childExitStatus.exitStatus())
+}
+
+private fun command(
+    otherVars: Map<String, String>,
+    env: Map<String, String>,
+    cfg: Config,
+    opts: Options
+): Pair<String, List<String>> {
+    val replacer = Replacer().vars(otherVars).env(env).config(cfg)
+    val commandLine: List<String> = CommandLine(opts.cmdDescriptor.toPath(), opts.path, replacer).get()
     val command: String = commandLine.first()
 
     var commandArgs: List<String> = commandLine.subList(1, commandLine.size)
@@ -102,40 +148,65 @@ fun main(args: Array<String>) {
             listOf()
         }
         debug("[CMD:last] ${last}")
-        val cargs = first + (arguments.ifEmpty { cfg.argsIfNoArgs.value }) + last
+        val cargs = first + (opts.arguments.ifEmpty { cfg.argsIfNoArgs.value }) + last
         debug("[CMD:cargs] ${cargs}")
         cargs
     } else {
         debug("[CMD:oargs] ${commandArgs}")
         commandArgs
     }
-
     debug("[CMD] ${command}")
-    if (command.isNotEmpty()) {
-        debug(command + " " + commandArgs.joinToString(separator = " "))
+    return Pair(command, commandArgs)
+}
 
-        val process = Command(command)
-        commandArgs.forEach { process.arg(it) }
-        process.cwd(cfg.cwd.value)
+private fun env(
+    otherVars: Map<String, String>,
+    originalEnv: Map<String, String>,
+    cfg: Config,
+    opts: Options
+): Map<String, String> {
+    val replacer = Replacer().vars(otherVars).env(originalEnv).config(cfg)
+    val env = readMap(
+        "Environment",
+        opts.path.parent?.resolve(opts.envDescriptor),
+        replacer,
+        if (cfg.preserveEnv.value) originalEnv else mapOf()
+    )
+    return env
+}
 
-        env.forEach { process.env(it.key, it.value) }
-
-        if (cfg.wait.value) {
-            val child = process.spawn()
-            fun handleSignal(signalNumber: Int) {
-                warn("Got signal ${signalNumber}")
-            }
-            signal(SIGINT, staticCFunction(::handleSignal))
-            val childExitStatus = child.wait()
-            info("Child Exit Status: ${childExitStatus}")
-            exitProcess(childExitStatus.exitStatus())
+private fun otherVars(
+    opts: Options,
+    originalEnv: Map<String, String>,
+    cfg: Config
+): Map<String, String> {
+    val otherVars: Map<String, String> =
+        if (!FileSystem.SYSTEM.exists(opts.path.parent!!.resolve(opts.incDescriptor))) {
+            mapOf()
         } else {
-            val child: Child = process.spawn()
-            info("Child: ${child}")
-            exitProcess(if (child.id != null && child.id!! > 0) 0 else 1)
+            val replacer = Replacer().env(originalEnv).config(cfg)
+            readAllLines(opts.incDescriptor.toPath())
+                .filter { it.isNotEmpty() }
+                .onEach { debug("Including ${it}") }
+                .flatMap { readMap("Includes", replacer.replaceVars(it).toPath(), replacer).entries }
+                .onEach { debug("Included ${it.key}: ${it.value}") }
+                .associate {
+                    Pair(replacer.replaceVars(it.key), replacer.replaceVars(it.value))
+                }
         }
-    } else {
-        error("Command not supplied!")
-        exitProcess(1)
-    }
+    info("Included ${otherVars.size} other vars from .inc.knx files list.")
+    return otherVars
+}
+
+private fun config(
+    opts: Options,
+    originalEnv: Map<String, String>
+): Config {
+    val cfg = Config(
+        opts.debug,
+        readMap("Config", opts.path.parent?.resolve(opts.cfgDescriptor), Replacer().env(originalEnv))
+    )
+    binaryDebug = cfg.debug.value
+    debug("[CFG] ${cfg}")
+    return cfg
 }

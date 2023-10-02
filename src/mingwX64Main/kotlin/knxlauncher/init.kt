@@ -12,10 +12,5 @@ private fun handleConsoleCtrl(signal: UInt): Int {
 
 actual fun initPlatform(): Unit {
     SetConsoleOutputCP(65001u)
-    println("==============================")
-    println("==============================")
-    println("SetConsoleCtrlHandler")
-    println("==============================")
-    println("==============================")
     SetConsoleCtrlHandler(staticCFunction(::handleConsoleCtrl), TRUE)
 }
