@@ -1,18 +1,19 @@
 package knxlauncher
 
 import com.kgit2.process.Child
+import com.kgit2.process.ChildOptions
 import com.kgit2.process.Command
+import io.ktor.utils.io.errors.*
 import kotlinx.cli.*
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 import kotlin.system.exitProcess
 
-
 fun main(args: Array<String>) {
     initPlatform()
 
-    val path: Path = binaryPath()
+    val path: Path = binaryPath
 
     val programName = path.name.replace(".exe", "", ignoreCase = true).replace("_debug_", "")
 
@@ -30,7 +31,11 @@ fun main(args: Array<String>) {
 
     parser.parse(args)
 
-    val originalEnv = env()
+    val originalEnv = Env.get()
+
+    val cfg = Config(debug, readMap("Config", path.parent?.resolve(cfgDescriptor), Replacer(path).env(originalEnv)))
+    binaryDebug = cfg.debug.value
+    debug("[CFG] ${cfg}")
 
     val otherVars: Map<String, String> = if (!FileSystem.SYSTEM.exists(path.parent!!.resolve(incDescriptor))) {
         mapOf()
@@ -38,22 +43,16 @@ fun main(args: Array<String>) {
         val replacer = Replacer(path).env(originalEnv)
         readAllLines(incDescriptor.toPath())
             .filter { it.isNotEmpty() }
-            .map { readAllLines(replacer.replaceVars(it).toPath()) }
-            .flatten()
-            .map { it.trimStart() }
-            .filter { it.isNotEmpty() && !it.startsWith("#") }
-            .map { it.split("=", limit = 1) }
-            .filter { it.size == 2 }
+            .onEach { debug("Including ${it}") }
+            .flatMap { readMap("Includes",  replacer.replaceVars(it).toPath(), replacer).entries }
+            .onEach { debug("Included ${it.key}: ${it.value}") }
             .associate {
-                Pair(replacer.replaceVars(it.first()), replacer.replaceVars(it.last()))
+                Pair(replacer.replaceVars(it.key), replacer.replaceVars(it.value))
             }
     }
+    info("Included ${otherVars.size} other vars from .inc.knx files list.")
 
     var replacer = Replacer(path).vars(otherVars).env(originalEnv)
-
-    val cfg = Config(debug, readMap("Config", path.parent?.resolve(cfgDescriptor), replacer))
-    binaryDebug = cfg.debug.value
-    debug("[CFG] ${cfg}")
 
     info("${parser.programName} [debug=${debug}] ${cmdDescriptor} ${cfgDescriptor}")
 
@@ -87,8 +86,12 @@ fun main(args: Array<String>) {
     debug("[CMD] ${command}")
     if (command.isNotEmpty()) {
         debug(command + " " + commandArgs.joinToString(separator = " "))
-        val process = Command(command).cwd(path.parent.toString())
+
+        val process = Command(command)
         commandArgs.forEach { process.arg(it) }
+        process.cwd(cfg.cwd.value)
+
+        warn("NO ENV IS PASSED ON WINDOWS NATIVE. SOME BUG ON KGIT KOMMAND")
         env.forEach { process.env(it.key, it.value) }
 
         if (cfg.wait.value) {
