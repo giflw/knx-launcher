@@ -9,7 +9,7 @@ object Properties {
     const val USER_HOME_ALIAS = "~"
     const val USER_NAME = "user.name"
 
-    private val properties:Map<String, String> =run {
+    private val properties: Map<String, String> = run {
         val vars = mutableMapOf<String, String>()
         val path = binaryPath
         vars[LAUNCHER_EXE] = path.name
@@ -34,7 +34,7 @@ object Properties {
         return ""
     }
 
-    fun get(key: String):String {
+    fun get(key: String): String {
         return this.properties[key]!!
     }
 

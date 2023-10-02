@@ -1,7 +1,21 @@
 package knxlauncher
 
-import platform.windows.SetConsoleOutputCP
+import kotlinx.cinterop.staticCFunction
+import platform.posix.sleep
+import platform.windows.*
+
+private fun handleConsoleCtrl(signal: UInt): Int {
+    println("SetConsoleCtrlHandler ${signal}")
+    sleep(10u)
+    return FALSE
+}
 
 actual fun initPlatform(): Unit {
-    SetConsoleOutputCP(65001)
+    SetConsoleOutputCP(65001u)
+    println("==============================")
+    println("==============================")
+    println("SetConsoleCtrlHandler")
+    println("==============================")
+    println("==============================")
+    SetConsoleCtrlHandler(staticCFunction(::handleConsoleCtrl), TRUE)
 }

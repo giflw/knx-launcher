@@ -8,8 +8,8 @@ version = "0.3.0"
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
     val inFile = compilation.allKotlinSourceSets.stream().filter {
-            it.name == "mingwX64Main"
-    } .findFirst().get().resources.sourceDirectories.singleFile.resolve(rcFileName)
+        it.name == "mingwX64Main"
+    }.findFirst().get().resources.sourceDirectories.singleFile.resolve(rcFileName)
     val outFile = buildDir.resolve("processedResources/$taskName.res")
 
     val windresTask = tasks.create<Exec>(taskName) {
@@ -27,6 +27,10 @@ repositories {
     mavenCentral()
 }
 
+fun isMinGWx64(): Boolean {
+    return System.getProperty("os.name").startsWith("Win", ignoreCase = true)
+}
+
 kotlin {
     sourceSets {
         commonMain {
@@ -37,29 +41,35 @@ kotlin {
                 implementation("com.kgit2:kommand:1.0.1")
             }
         }
-        val nativeMain by creating {
-            dependsOn(commonMain.get())
-        }
+
         val mingwX64Main by creating {
-            if (System.getProperty("os.name").startsWith("Win", ignoreCase = true)) {
-                nativeMain.dependsOn(this)
+            if (isMinGWx64()) {
+                dependsOn(commonMain.get())
             }
         }
+
+        val mingwX64Test by creating {
+            if (isMinGWx64()) {
+                dependsOn(commonTest.get())
+            }
+        }
+
     }
-    mingwX64("native") {
+    sourceSets.forEach(System.out::println)
+    mingwX64("mingwX64") {
         binaries {
             val resourcesBaseName = "knx-launcher"
             val KNX_EXE_NAME = "KNX_EXE_NAME"
             var knxExeName = System.getenv(KNX_EXE_NAME)
             knxExeName = knxExeName ?: System.getProperty(KNX_EXE_NAME)
             val exeName = if (knxExeName != null && knxExeName.isNotEmpty()) knxExeName else "knx-launcher"
-            executable("knxLauncher", listOf(DEBUG)){
+            executable("knxLauncher", listOf(DEBUG)) {
                 baseName = "${exeName}_debug_"
                 entryPoint = "knxlauncher.main"
                 windowsResources("${resourcesBaseName}.rc")
                 println("Executable path: ${outputFile.absolutePath}")
             }
-            executable("knxLauncher", listOf(RELEASE)){
+            executable("knxLauncher", listOf(RELEASE)) {
                 baseName = exeName
                 entryPoint = "knxlauncher.main"
                 windowsResources("${resourcesBaseName}.rc")

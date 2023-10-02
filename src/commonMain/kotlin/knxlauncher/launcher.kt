@@ -1,14 +1,16 @@
 package knxlauncher
 
 import com.kgit2.process.Child
-import com.kgit2.process.ChildOptions
 import com.kgit2.process.Command
-import io.ktor.utils.io.errors.*
+import kotlinx.cinterop.staticCFunction
 import kotlinx.cli.*
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
+import platform.posix.SIGINT
+import platform.posix.signal
 import kotlin.system.exitProcess
+
 
 fun main(args: Array<String>) {
     initPlatform()
@@ -19,13 +21,33 @@ fun main(args: Array<String>) {
 
     val parser = ArgParser(programName)
     val debug by parser.option(ArgType.Boolean, description = "Turn on debug mode").default(binaryDebug)
-    val cmdDescriptor by parser.option(ArgType.String, shortName = "d", fullName = "command", description = "Application command description file")
+    val cmdDescriptor by parser.option(
+        ArgType.String,
+        shortName = "d",
+        fullName = "command",
+        description = "Application command description file"
+    )
         .default("${programName}.cmd.knx")
-    val cfgDescriptor by parser.option(ArgType.String, shortName = "c", fullName = "configuration", description = "Configuration description file")
+    val cfgDescriptor by parser.option(
+        ArgType.String,
+        shortName = "c",
+        fullName = "configuration",
+        description = "Configuration description file"
+    )
         .default("${programName}.cfg.knx")
-    val envDescriptor by parser.option(ArgType.String, shortName = "e", fullName = "environment", description = "Environment description file")
+    val envDescriptor by parser.option(
+        ArgType.String,
+        shortName = "e",
+        fullName = "environment",
+        description = "Environment description file"
+    )
         .default("${programName}.env.knx")
-    val incDescriptor by parser.option(ArgType.String, shortName = "i", fullName = "includes", description = "Includes description file (list of other files to include as key=value replacements)")
+    val incDescriptor by parser.option(
+        ArgType.String,
+        shortName = "i",
+        fullName = "includes",
+        description = "Includes description file (list of other files to include as key=value replacements)"
+    )
         .default("${programName}.inc.knx")
     val arguments: List<String> by parser.argument(ArgType.String).optional().multiple(Int.MAX_VALUE)
 
@@ -44,7 +66,7 @@ fun main(args: Array<String>) {
         readAllLines(incDescriptor.toPath())
             .filter { it.isNotEmpty() }
             .onEach { debug("Including ${it}") }
-            .flatMap { readMap("Includes",  replacer.replaceVars(it).toPath(), replacer).entries }
+            .flatMap { readMap("Includes", replacer.replaceVars(it).toPath(), replacer).entries }
             .onEach { debug("Included ${it.key}: ${it.value}") }
             .associate {
                 Pair(replacer.replaceVars(it.key), replacer.replaceVars(it.value))
@@ -57,7 +79,12 @@ fun main(args: Array<String>) {
     info("${parser.programName} [debug=${debug}] ${cmdDescriptor} ${cfgDescriptor}")
 
     val env =
-        readMap("Environment", path.parent?.resolve(envDescriptor), replacer, if (cfg.preserveEnv.value) originalEnv else mapOf())
+        readMap(
+            "Environment",
+            path.parent?.resolve(envDescriptor),
+            replacer,
+            if (cfg.preserveEnv.value) originalEnv else mapOf()
+        )
 
     replacer = Replacer().vars(otherVars).env(env).config(cfg)
     val commandLine: List<String> = CommandLine(cmdDescriptor.toPath(), path, replacer).get()
@@ -94,7 +121,12 @@ fun main(args: Array<String>) {
         env.forEach { process.env(it.key, it.value) }
 
         if (cfg.wait.value) {
-            val childExitStatus = process.status()
+            val child = process.spawn()
+            fun handleSignal(signalNumber: Int) {
+                warn("Got signal ${signalNumber}")
+            }
+            signal(SIGINT, staticCFunction(::handleSignal))
+            val childExitStatus = child.wait()
             info("Child Exit Status: ${childExitStatus}")
             exitProcess(childExitStatus.exitStatus())
         } else {
