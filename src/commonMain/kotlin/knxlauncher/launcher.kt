@@ -91,7 +91,6 @@ fun main(args: Array<String>) {
         commandArgs.forEach { process.arg(it) }
         process.cwd(cfg.cwd.value)
 
-        warn("NO ENV IS PASSED ON WINDOWS NATIVE. SOME BUG ON KGIT KOMMAND")
         env.forEach { process.env(it.key, it.value) }
 
         if (cfg.wait.value) {
