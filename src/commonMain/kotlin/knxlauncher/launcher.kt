@@ -3,32 +3,31 @@ package knxlauncher
 import com.kgit2.process.Child
 import com.kgit2.process.ChildExitStatus
 import com.kgit2.process.Command
-import kotlinx.cinterop.staticCFunction
 import kotlinx.cli.*
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
-import platform.posix.SIGINT
-import platform.posix.signal
 import kotlin.system.exitProcess
 
 // source: https://kickjava.com/src/org/eclipse/equinox/app/IApplication.java.htm
 /**
-* Exit object indicating normal termination
-*/
-val EXIT_OK = 0
-/**
-* Exit object requesting platform restart
-*/
-val EXIT_RESTART = 23
-/**
-* Exit object requesting that the command passed back be executed. Typically
-* this is used to relaunch Eclipse with different command line arguments. When the executable is
-* relaunched the command line will be retrieved from the <code>eclipse.exitdata</code> system property.
-*/
-val EXIT_RELAUNCH = 24
+ * Exit object indicating normal termination
+ */
+const val EXIT_OK = 0
 
-class Options constructor(args: Array<String>) {
+/**
+ * Exit object requesting platform restart
+ */
+const val EXIT_RESTART = 23
+
+/**
+ * Exit object requesting that the command passed back be executed. Typically
+ * this is used to relaunch Eclipse with different command line arguments. When the executable is
+ * relaunched the command line will be retrieved from the <code>eclipse.exitdata</code> system property.
+ */
+const val EXIT_RELAUNCH = 24
+
+class Options(args: Array<String>) {
     val path: Path = binaryPath
 
     val programName = path.name.replace(".exe", "", ignoreCase = true).replace("_debug_", "")

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+
 plugins {
     kotlin("multiplatform") version "1.9.10"
 }
@@ -76,6 +78,14 @@ kotlin {
                 println("Executable path: ${outputFile.absolutePath}")
             }
         }
+    }
+}
+
+
+tasks.named<KotlinCompilationTask<*>>("compileKotlinMingwX64").configure {
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlinx.cinterop.ExperimentalForeignApi")
+        freeCompilerArgs.add("-opt-in=kotlinx.cinterop.ExperimentalNativeApi")
     }
 }
 
