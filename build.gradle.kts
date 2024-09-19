@@ -34,6 +34,7 @@ fun isMinGWx64(): Boolean {
 kotlin {
     jvm()
     mingwX64()
+    linuxX64()
 
     applyDefaultHierarchyTemplate()
 
