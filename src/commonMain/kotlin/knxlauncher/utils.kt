@@ -1,10 +1,8 @@
 package knxlauncher
 
-import kotlinx.cinterop.get
-import kotlinx.cinterop.toKString
 import okio.FileSystem
 import okio.Path
-import platform.posix.environ
+import okio.SYSTEM
 
 expect val DS: String
 expect val binaryPath: Path

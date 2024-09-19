@@ -1,7 +1,5 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
-
 plugins {
-    kotlin("multiplatform") version "1.9.10"
+    kotlin("multiplatform") version "1.9.24"
 }
 
 group = "com.itquasar"
@@ -34,25 +32,25 @@ fun isMinGWx64(): Boolean {
 }
 
 kotlin {
+    jvm()
+    mingwX64()
+
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
+        all {
+            listOf("kotlinx.cinterop", "kotlin.experimental").forEach { pkg ->
+                listOf("ExperimentalForeignApi", "ExperimentalNativeApi").forEach { cls ->
+                    languageSettings.optIn("${pkg}.${cls}")
+                }
+            }
+        }
         commonMain {
-            val okioVersion = "3.5.0"
+            val okioVersion = "3.9.1"
             dependencies {
                 implementation("com.squareup.okio:okio:$okioVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
-                implementation("com.kgit2:kommand:1.0.2")
-            }
-        }
-
-        val mingwX64Main by creating {
-            if (isMinGWx64()) {
-                dependsOn(commonMain.get())
-            }
-        }
-
-        val mingwX64Test by creating {
-            if (isMinGWx64()) {
-                dependsOn(commonTest.get())
+                implementation("com.kgit2:kommand:2.2.1")
             }
         }
 
@@ -80,17 +78,3 @@ kotlin {
         }
     }
 }
-
-
-tasks.named<KotlinCompilationTask<*>>("compileKotlinMingwX64").configure {
-    compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlinx.cinterop.ExperimentalForeignApi")
-        freeCompilerArgs.add("-opt-in=kotlinx.cinterop.ExperimentalNativeApi")
-    }
-}
-
-//tasks.withType<Wrapper> {
-//    gradleVersion = "8.3"
-//    distributionType = Wrapper.DistributionType.BIN
-//}
-

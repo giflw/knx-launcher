@@ -1,13 +1,12 @@
 package knxlauncher
 
-import com.kgit2.process.Child
-import com.kgit2.process.ChildExitStatus
-import com.kgit2.process.Command
+import com.kgit2.kommand.process.Child
+import com.kgit2.kommand.process.Command
 import kotlinx.cli.*
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
-import kotlin.system.exitProcess
+import okio.SYSTEM
 
 // source: https://kickjava.com/src/org/eclipse/equinox/app/IApplication.java.htm
 /**
@@ -26,6 +25,8 @@ const val EXIT_RESTART = 23
  * relaunched the command line will be retrieved from the <code>eclipse.exitdata</code> system property.
  */
 const val EXIT_RELAUNCH = 24
+
+expect fun exit(exitCode: Int): Unit
 
 class Options(args: Array<String>) {
     val path: Path = binaryPath
@@ -99,11 +100,11 @@ fun main(args: Array<String>) {
         } else {
             val child: Child = process.spawn()
             info("Child: ${child}")
-            exitProcess(if (child.id != null && child.id!! > 0) 0 else 1)
+            exit(if (child.id() != null && child.id()!! > 0u) 0 else 1)
         }
     } else {
         error("Command not supplied!")
-        exitProcess(1)
+        exit(1)
     }
 }
 
@@ -113,16 +114,16 @@ private fun run(process: Command, cfg: Config) {
 //    }
 //    signal(SIGINT, staticCFunction(::handleSignal))
 
-    var childExitStatus: ChildExitStatus
+    var childExitStatus: Int
 
     do {
         warn("Starting ${process.command}")
         val child = process.spawn()
         childExitStatus = child.wait()
         warn("Child Exit Status: ${childExitStatus}")
-    } while (cfg.shouldRestart(childExitStatus.exitStatus()))
+    } while (cfg.shouldRestart(childExitStatus))
 
-    exitProcess(childExitStatus.exitStatus())
+    exit(childExitStatus)
 }
 
 private fun command(

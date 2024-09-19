@@ -1,6 +1,6 @@
 package knxlauncher
 
-var binaryDebug: Boolean = Platform.isDebugBinary
+expect var binaryDebug: Boolean
 
 private fun log(level: String, msg: String, ex: Throwable? = null) {
     println("[${level}] ${msg}")
