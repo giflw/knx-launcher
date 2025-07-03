@@ -3,7 +3,7 @@
   <assemblyIdentity
     version="0.3.0.0"
     processorArchitecture="*"
-    name="KNX.Laucher"
+    name="KNX.Launcher"
     type="win32"
   />
   <description>Simple launcher for windows apps replacing bat files.</description>

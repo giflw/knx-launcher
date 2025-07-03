@@ -100,7 +100,7 @@ fun main(args: Array<String>) {
         } else {
             val child: Child = process.spawn()
             info("Child: ${child}")
-            exit(if (child.id() != null && child.id()!! > 0u) 0 else 1)
+            exit(if (child.id() > 0u) 0 else 1)
         }
     } else {
         error("Command not supplied!")

@@ -1,9 +1,38 @@
 plugins {
-    kotlin("multiplatform") version "1.9.24"
+    kotlin("multiplatform") version "2.2.0"
+    id("de.undercouch.download") version "5.6.0"
 }
 
 group = "com.itquasar"
 version = "0.4.0-SNAPSHOT"
+
+fun isMinGWx64(): Boolean {
+    return System.getProperty("os.name").startsWith("Win", ignoreCase = true)
+}
+
+tasks.register("download-mingw") {
+    if (isMinGWx64() && !layout.buildDirectory.file("mingw64").get().asFile.exists()) {
+        val destFile = layout.buildDirectory.file("mingw64.zip")
+        download.run {
+            src("https://github.com/brechtsanders/winlibs_mingw/releases/download/15.1.0posix-13.0.0-ucrt-r2/winlibs-x86_64-posix-seh-gcc-15.1.0-mingw-w64ucrt-13.0.0-r2.zip")
+            dest(destFile)
+            onlyIfModified(true)
+            println(name)
+            println("from: $src")
+            println("  to: $dest")
+        }
+        println("MinGW downloaded")
+        copy {
+            println("Unzipping MinGW")
+            from(zipTree(destFile))
+            into(layout.buildDirectory)
+        }
+        println("MinGW unzipped")
+        destFile.get().asFile.delete()
+    } else {
+        println("Skipping mingw")
+    }
+}
 
 fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileName: String) {
     val taskName = linkTaskName.replaceFirst("link", "windres")
@@ -15,11 +44,19 @@ fun org.jetbrains.kotlin.gradle.plugin.mpp.Executable.windowsResources(rcFileNam
     val windresTask = tasks.create<Exec>(taskName) {
         inputs.file(inFile)
         outputs.file(outFile)
-        commandLine("windres", "--use-temp-file", inFile, /*"-D_${buildType.name}",*/ "-O", "coff", "-o", outFile)
-        dependsOn(compilation.compileTaskProvider)
+        commandLine(
+            "build/mingw64/bin/windres",
+            "--use-temp-file",
+            inFile, /*"-D_${buildType.name}",*/
+            "-O",
+            "coff",
+            "-o",
+            outFile
+        )
+        dependsOn(compilation.compileTaskProvider, "download-mingw")
     }
 
-    linkTask.dependsOn(windresTask)
+    linkTaskProvider.get().dependsOn(windresTask)
     linkerOpts(outFile.toString())
 }
 
@@ -27,9 +64,6 @@ repositories {
     mavenCentral()
 }
 
-fun isMinGWx64(): Boolean {
-    return System.getProperty("os.name").startsWith("Win", ignoreCase = true)
-}
 
 kotlin {
     jvm()
